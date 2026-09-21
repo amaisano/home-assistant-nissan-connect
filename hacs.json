@@ -1,5 +1,7 @@
 {
   "name": "MyNISSAN",
   "country": ["CA", "MX", "US"],
-  "homeassistant": "2026.7.4"
+  "homeassistant": "2026.7.4",
+  "zip_release": true,
+  "filename": "mynissan.zip"
 }
