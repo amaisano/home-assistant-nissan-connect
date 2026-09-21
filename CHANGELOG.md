@@ -2,6 +2,19 @@
 
 <!-- version list -->
 
+## v0.3.5 (2026-09-21)
+
+### Bug Fixes
+
+- Install MyNISSAN from release archive
+  ([`7cf6b0d`](https://github.com/bvdcode/home-assistant-nissan-connect/commit/7cf6b0dfaa07911de09918f86b06bc93cb17a22c))
+
+### Documentation
+
+- Add Ko-fi support button
+  ([`d7bbffe`](https://github.com/bvdcode/home-assistant-nissan-connect/commit/d7bbffe48920687936dc033906b0ed076f08acdf))
+
+
 ## v0.3.4 (2026-09-11)
 
 ### Bug Fixes
