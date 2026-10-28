@@ -149,7 +149,9 @@ async def test_setup_registers_vehicle_and_persists_refreshed_tokens(
         VEHICLE.vin: NissanVehicleData(VEHICLE_STATUS, VEHICLE_LOCATION)
     }
 
-    device = dr.async_get(hass).async_get_device(identifiers={(DOMAIN, VEHICLE.vin)})
+    device = dr.async_get(hass).async_get_device_by_identifier(
+        (DOMAIN, VEHICLE.vin), entry.entry_id
+    )
     assert device is not None
     assert device.name == "Family Ariya"
     assert device.manufacturer == "Nissan"
