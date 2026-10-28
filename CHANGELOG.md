@@ -2,6 +2,19 @@
 
 <!-- version list -->
 
+## v0.3.5.1 (2026-10-28, fork: amaisano)
+
+### Features
+
+- `mynissan.refresh` service (`kinds`: battery, climate, status, location) that asks the car for fresh data instead
+  of waiting for the 15-minute poll of Nissan's cache, then refreshes the coordinator. Status and location wait for
+  the car's answer (pynissan's 210 s default).
+
+### Testing
+
+- Tests run against Home Assistant 2026.10 (pytest-homeassistant-custom-component 0.13.373);
+  `test_init` uses `async_get_device_by_identifier`.
+
 ## v0.3.5 (2026-09-21)
 
 ### Bug Fixes

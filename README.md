@@ -11,6 +11,22 @@
 MyNISSAN connects supported Nissan vehicles to Home Assistant through the
 MyNISSAN cloud service.
 
+> [!IMPORTANT]
+> **This is a fork** of [bvdcode/home-assistant-nissan-connect](https://github.com/bvdcode/home-assistant-nissan-connect)
+> v0.3.5. It adds one thing, the `mynissan.refresh` service; see the [CHANGELOG](CHANGELOG.md). To install it, add
+> `https://github.com/amaisano/home-assistant-nissan-connect` to HACS as a custom repository (type Integration).
+>
+> The integration only reads Nissan's cached data on its 15-minute poll. `mynissan.refresh` asks the car itself for
+> every vehicle, then refreshes the entities:
+>
+> ```yaml
+> action: mynissan.refresh
+> data:
+>   kinds: [battery, climate, status, location]  # default: [status]
+> ```
+>
+> `status` and `location` wait for the car's answer (up to 210 s).
+
 The integration provides:
 
 - configuration through the Home Assistant user interface;
