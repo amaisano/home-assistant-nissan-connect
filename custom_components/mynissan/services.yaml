@@ -1,0 +1,14 @@
+refresh:
+  fields:
+    kinds:
+      required: false
+      default:
+        - status
+      selector:
+        select:
+          multiple: true
+          options:
+            - battery
+            - climate
+            - status
+            - location

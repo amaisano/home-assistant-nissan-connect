@@ -1,19 +1,23 @@
 """MyNISSAN integration for Home Assistant."""
 
 import asyncio
+import logging
 from collections.abc import Mapping
 from typing import cast
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
-from homeassistant.core import HomeAssistant, callback
+from homeassistant.core import HomeAssistant, ServiceCall, callback
 from homeassistant.exceptions import (
     ConfigEntryAuthFailed,
     ConfigEntryError,
     ConfigEntryNotReady,
+    HomeAssistantError,
+    ServiceValidationError,
 )
 from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers import device_registry as dr
+import voluptuous as vol
 from pynissan import AuthenticationError, NetworkError, NissanError, Tokens, Vehicle
 
 from .api import create_client, tokens_from_data, tokens_to_data
@@ -31,6 +35,74 @@ from .coordinator import NissanDataUpdateCoordinator
 from .models import NissanConfigData, NissanConfigEntry, NissanRuntimeData
 
 CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
+
+_LOGGER = logging.getLogger(__name__)
+
+# Local addition (not upstream): ask the car to publish fresh data, which the
+# coordinator alone never does (it only reads Nissan's cloud cache).
+SERVICE_REFRESH = "refresh"
+ATTR_KINDS = "kinds"
+REFRESH_KINDS = ("battery", "climate", "status", "location")
+REFRESH_SCHEMA = vol.Schema(
+    {
+        vol.Optional(ATTR_KINDS, default=["status"]): vol.All(
+            cv.ensure_list, [vol.In(REFRESH_KINDS)]
+        )
+    }
+)
+
+
+async def async_setup(hass: HomeAssistant, config: dict) -> bool:
+    """Register the mynissan.refresh service."""
+
+    async def _async_refresh(call: ServiceCall) -> None:
+        entries = [
+            entry
+            for entry in hass.config_entries.async_loaded_entries(DOMAIN)
+            if isinstance(getattr(entry, "runtime_data", None), NissanRuntimeData)
+        ]
+        if not entries:
+            raise ServiceValidationError("MyNISSAN is not loaded")
+        failures: list[str] = []
+        for entry in entries:
+            runtime = entry.runtime_data
+            for vehicle in runtime.vehicles:
+                for kind in call.data[ATTR_KINDS]:
+                    try:
+                        await _async_refresh_kind(runtime.client, vehicle.vin, kind)
+                    except (NissanError, TimeoutError) as error:
+                        failures.append(f"{kind}: {error}")
+            await runtime.coordinator.async_request_refresh()
+        if failures:
+            raise HomeAssistantError("MyNISSAN refresh failed - " + "; ".join(failures))
+
+    hass.services.async_register(
+        DOMAIN, SERVICE_REFRESH, _async_refresh, schema=REFRESH_SCHEMA
+    )
+    return True
+
+
+async def _async_refresh_kind(client, vin: str, kind: str) -> None:
+    """Send one refresh request and wait for the car's answer."""
+    if kind in ("battery", "climate"):
+        refresh = (
+            client.async_refresh_battery_status
+            if kind == "battery"
+            else client.async_refresh_climate_status
+        )
+        if not await refresh(vin):
+            raise NissanError(f"{kind} refresh was not accepted")
+        return
+    request = await (
+        client.async_refresh_vehicle_status(vin)
+        if kind == "status"
+        else client.async_locate_vehicle(vin)
+    )
+    result = await client.async_wait_for_service_request(vin, request)
+    if not result.is_success:
+        status = result.status.value if result.status is not None else "unknown"
+        raise NissanError(f"{kind} refresh ended with status {status}")
+    _LOGGER.debug("MyNISSAN %s refresh succeeded for %s", kind, vin)
 PLATFORMS: tuple[Platform, ...] = (
     Platform.BINARY_SENSOR,
     Platform.CLIMATE,

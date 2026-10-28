@@ -102,5 +102,17 @@
         "name": "Range"
       }
     }
+  },
+  "services": {
+    "refresh": {
+      "name": "Refresh from vehicle",
+      "description": "Ask the vehicle to publish fresh data (it wakes the car's telematics), then update the MyNISSAN entities.",
+      "fields": {
+        "kinds": {
+          "name": "What to refresh",
+          "description": "battery, climate, status (doors/locks and general status) and/or location."
+        }
+      }
+    }
   }
 }
